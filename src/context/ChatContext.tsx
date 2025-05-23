@@ -10,6 +10,7 @@ interface ChatContextType {
   createNewChat: () => void;
   deleteConversation: (id: string) => void;
   isLoading: boolean;
+  error: string | null;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -20,6 +21,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversationState] = useState<Conversation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSessions();
@@ -44,6 +46,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error) {
       console.error('Error fetching sessions:', error);
+      setError('Failed to load conversations. Please try again.');
     }
   };
 
@@ -59,11 +62,13 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error) {
       console.error('Error deleting conversation:', error);
+      setError('Failed to delete conversation. Please try again.');
     }
   };
 
   const setActiveConversation = (conversation: Conversation) => {
     setActiveConversationState(conversation);
+    setError(null); // Clear any existing errors
   };
 
   const addMessage = async (content: string, role: 'user') => {
@@ -71,6 +76,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       setIsLoading(true);
+      setError(null); // Clear any existing errors
+      
       const response = await axios.post(
         `${API_URL}/sessions/${activeConversation.id}/messages`,
         { message: content }
@@ -95,8 +102,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       );
 
       setActiveConversationState(updatedConversation);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
+      setError(error.response?.data?.message || 'Failed to send message. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +112,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const createNewChat = async () => {
     try {
-      setIsLoading(true); // Set loading state when creating new chat
+      setIsLoading(true);
+      setError(null); // Clear any existing errors
+      
       const response = await axios.post(`${API_URL}/sessions`);
       const newSession = response.data.session;
       
@@ -117,10 +127,11 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setConversations(prev => [formattedSession, ...prev]);
       setActiveConversationState(formattedSession);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating new chat:', error);
+      setError(error.response?.data?.message || 'Failed to create new chat. Please try again.');
     } finally {
-      setIsLoading(false); // Reset loading state after creating new chat
+      setIsLoading(false);
     }
   };
 
@@ -133,7 +144,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addMessage,
         createNewChat,
         deleteConversation,
-        isLoading
+        isLoading,
+        error
       }}
     >
       {children}

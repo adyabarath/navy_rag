@@ -3,7 +3,7 @@ import Message from './Message';
 import ChatInput from './ChatInput';
 import ContextDisplay from './ContextDisplay';
 import { useChat } from '../../context/ChatContext';
-import { ArrowDown, Loader2 } from 'lucide-react';
+import { ArrowDown, Loader2, AlertCircle } from 'lucide-react';
 import MarkdownTable from './MarkdownTable';
 
 interface ChatContainerProps {
@@ -11,7 +11,7 @@ interface ChatContainerProps {
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({ showContext }) => {
-  const { activeConversation, addMessage, isLoading } = useChat();
+  const { activeConversation, addMessage, isLoading, error } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = React.useState(false);
@@ -52,6 +52,15 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ showContext }) => {
         ref={containerRef}
         className="flex-1 overflow-y-auto p-4 md:p-6"
       >
+        {error && (
+          <div className="max-w-3xl mx-auto mb-4">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <AlertCircle size={20} />
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
+
         {activeConversation?.messages && activeConversation.messages.length > 0 ? (
           <>
             <div className="max-w-3xl mx-auto space-y-6">
@@ -71,7 +80,10 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ showContext }) => {
                     <div className="text-sm text-gray-500 mb-1">Assistant</div>
                     <div className="bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-4">
                       <div className="flex items-center gap-2">
-                        <Loader2 className="animate-spin" size={16} />
+                        <div className="relative">
+                          <div className="w-4 h-4 border-2 border-[#0A192F] border-t-transparent rounded-full animate-spin"></div>
+                          <div className="absolute inset-0 w-4 h-4 border-2 border-transparent border-b-[#0A192F] rounded-full animate-spin" style={{ animationDelay: '-0.2s' }}></div>
+                        </div>
                         <span>Generating response...</span>
                       </div>
                     </div>
@@ -100,17 +112,25 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ showContext }) => {
                   <button
                     key={i}
                     onClick={() => handleSampleQuestion(suggestion)}
-                    className="p-3 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors text-sm"
                     disabled={isLoading}
+                    className={`
+                      p-3 border border-gray-300 rounded-lg transition-colors text-sm
+                      ${isLoading 
+                        ? 'bg-gray-100 cursor-not-allowed opacity-50' 
+                        : 'hover:bg-gray-100'}
+                    `}
                   >
                     {suggestion}
                   </button>
                 ))}
               </div>
               {isLoading && (
-                <div className="mt-6 flex items-center justify-center gap-2 text-gray-600">
-                  <Loader2 className="animate-spin" size={16} />
-                  <span>Generating response...</span>
+                <div className="mt-6 flex flex-col items-center justify-center gap-3">
+                  <div className="relative">
+                    <div className="w-8 h-8 border-3 border-[#0A192F] border-t-transparent rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 w-8 h-8 border-3 border-transparent border-b-[#0A192F] rounded-full animate-spin" style={{ animationDelay: '-0.2s' }}></div>
+                  </div>
+                  <span className="text-gray-600">Processing your request...</span>
                 </div>
               )}
             </div>
